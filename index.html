@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolinho de Chocolate</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: pink;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #message-container {
+            margin-top: 50px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        #no-btn {
+            position: absolute;
+        }
+
+        #game-container {
+            margin-top: 20px;
+        }
+
+        #congratulations, #game-over {
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+
+        .cake-emoji {
+            position: absolute;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div id="message-container">
+        <p>aceita um bolinho de chocolate semana que vem?</p>
+        <button id="yes-btn">Sim</button>
+        <button id="no-btn">Não</button>
+    </div>
+    <div id="game-container" style="display: none;">
+        <p>Você tem que fazer 10 para receber o prêmio!</p>
+        <canvas id="game-canvas" width="800" height="400"></canvas>
+        <p id="score">Pontuação: 0</p>
+    </div>
+    <div id="congratulations" style="display: none;">
+        <p id="message">Parabéns ❤️❤️ você ganhou o bolinho de chocolate</p>
+    </div>
+    <div id="game-over" style="display: none;">
+        <p>Você perdeu! <button id="restart-btn">Recomeçar jogo</button></p>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const yesButton = document.getElementById('yes-btn');
+            const noButton = document.getElementById('no-btn');
+            const messageContainer = document.getElementById('message-container');
+            const gameContainer = document.getElementById('game-container');
+            const congratulations = document.getElementById('congratulations');
+            const gameOver = document.getElementById('game-over');
+            const messageElement = document.getElementById('message');
+            const restartButton = document.getElementById('restart-btn');
+
+            yesButton.addEventListener('click', () => {
+                messageContainer.style.display = 'none';
+                gameContainer.style.display = 'block';
+                startGame();
+            });
+
+            noButton.addEventListener('click', () => {
+                noButton.style.position = 'absolute';
+                noButton.style.top = `${Math.random() * 80 + 10}%`;
+                noButton.style.left = `${Math.random() * 80 + 10}%`;
+            });
+
+            restartButton.addEventListener('click', () => {
+                gameOver.style.display = 'none';
+                gameContainer.style.display = 'block';
+                startGame();
+            });
+
+            function startGame() {
+                const canvas = document.getElementById('game-canvas');
+                const ctx = canvas.getContext('2d');
+                const scoreElement = document.getElementById('score');
+                let score = 0;
+                let gameInterval;
+                const obstacles = [];
+                const player = {
+                    x: 50,
+                    y: canvas.height - 30,
+                    width: 30,
+                    height: 30,
+                    jump: 0,
+                    jumping: false
+                };
+
+                function drawPlayer() {
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(player.x, player.y - player.jump, player.width, player.height);
+                }
+
+                function drawObstacles() {
+                    ctx.fillStyle = 'red';
+                    obstacles.forEach(obs => {
+                        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    });
+                }
+
+                function updateGameArea() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    drawPlayer();
+                    drawObstacles();
+
+                    if (player.jumping) {
+                        player.jump += 6;
+                        if (player.jump >= 70) {
+                            player.jumping = false;
+                        }
+                    } else if (player.jump > 0) {
+                        player.jump -= 6;
+                        if (player.jump <= 0) {
+                            player.jump = 0;
+                        }
+                    }
+
+                    obstacles.forEach(obs => {
+                        obs.x -= 5;
+                        if (obs.x < 0) {
+                            obstacles.splice(obstacles.indexOf(obs), 1);
+                            score++;
+                            scoreElement.textContent = `Pontuação: ${score}`;
+                        }
+
+                        if (player.x < obs.x + obs.width &&
+                            player.x + player.width > obs.x &&
+                            player.y - player.jump < obs.y + obs.height &&
+                            player.y - player.jump + player.height > obs.y) {
+                            endGame();
+                        }
+                    });
+
+                    if (score >= 10) {
+                        endGame(true);
+                    }
+                }
+
+                function endGame(win = false) {
+                    clearInterval(gameInterval);
+                    gameContainer.style.display = 'none';
+                    if (win) {
+                        congratulations.style.display = 'block';
+                        messageElement.innerHTML = 'Parabéns ❤️❤️ você ganhou o bolinho de chocolate';
+                        showCakeEmojis();
+                    } else {
+                        gameOver.style.display = 'block';
+                    }
+                }
+
+                function jump() {
+                    if (!player.jumping && player.jump === 0) {
+                        player.jumping = true;
+                    }
+                }
+
+                function generateObstacle() {
+                    const width = 30;
+                    const height = 30;
+                    const x = canvas.width;
+                    const y = canvas.height - height;
+                    obstacles.push({ x, y, width, height });
+                }
+
+                function showCakeEmojis() {
+                    for (let i = 0; i < 30; i++) {
+                        const emoji = document.createElement('div');
+                        emoji.className = 'cake-emoji';
+                        emoji.innerText = '🍰';
+                        emoji.style.top = `${Math.random() * 80 + 10}%`;
+                        emoji.style.left = `${Math.random() * 80 + 10}%`;
+                        document.body.appendChild(emoji);
+                    }
+                }
+
+                gameInterval = setInterval(() => {
+                    updateGameArea();
+                }, 20);
+
+                setInterval(generateObstacle, 2000);
+                document.addEventListener('click', () => {
+                    jump();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
